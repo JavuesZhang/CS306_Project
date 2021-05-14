@@ -81,7 +81,7 @@ export default function App({
       data: trips,
       getPath: d => d.path,
       getTimestamps: d => d.timestamps,
-      getColor: d => [253, 86, 16],
+      getColor: d => d.color,
       opacity: 0.6,
       widthMinPixels: 2,
       rounded: true,
