@@ -35,6 +35,8 @@ def relation_time_number():
 
 def map_taxi():
     df = pd.read_csv("sample_taxi_modified.csv")
+    # df['hour'] = pd.to_datetime(df['time']).dt.hour
+    # df['minute'] = pd.to_datetime(df['time']).dt.minute
 
     state_list = ["Free", "Occupancy", "All"]
     state_dict = {"Free": 0, "Occupancy": 1}
@@ -58,7 +60,7 @@ def map_taxi():
     chart_data = pd.DataFrame({"minute": range(60), "pickups": hist})
     # LAYING OUT THE HISTOGRAM SECTION
     st.write("")
-    st.write("**Breakdown of rides per minute between %i:00 and %i:00**" % (hour_selected, (hour_selected + 1) % 24))
+    st.write("**per minute between %i:00 and %i:00**" % (hour_selected, (hour_selected + 1) % 24))
     st.altair_chart(alt.Chart(chart_data).mark_area(
         interpolate='step-after',
     ).encode(
@@ -104,4 +106,4 @@ def map_taxi():
 
 
 if __name__ == "__main__":
-    relation_time_number()
+    map_taxi()
