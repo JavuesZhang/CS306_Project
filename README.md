@@ -3,13 +3,21 @@
 > 11812106 马永煜; 11812206 詹子正; 11812424 黄浩洋; 11812425 张佳雨
 
 ## Usage
-1. Place your `sample_taxi.csv` in this folder;
-2. Translate the csv file into json file with `tojson.py`;
+1. Place your `sample_taxi.csv` in `resource/`;
+2. `cd src`
+3. Process data with `data_process.py`;
     ```bash
-    python tojson.py
+    python data_process.py
     ```
-3. Run this project
-    ```bash
-    npm install
-    npm start
-    ```
+    Then you will get some data files in `resource/`.
+### Static Analysis
+```bash
+cd ../src
+streamlit run streamlitDemo.py
+```
+### Dynamic Trajectory
+```bash
+cd ..
+npm install
+npm start
+```

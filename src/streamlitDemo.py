@@ -24,7 +24,7 @@ def load_data_by_hour(data, target_hour, state_name):
 
 def relation_time_number():
     st.title("relation between taxi number and time")
-    df = pd.read_csv("sample_taxi_modified.csv")
+    df = pd.read_csv("../resource/data_processed.csv")
 
     sub_df = df[['hour', 'taxi_id']]
     sub_df = sub_df.drop_duplicates()

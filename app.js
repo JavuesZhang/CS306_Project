@@ -8,7 +8,7 @@ import {TripsLayer} from '@deck.gl/geo-layers';
 
 // Source data CSV
 const DATA_URL = {
-  TRIPS: './taxi.json'
+  TRIPS: './resource/data_processed.json'
   };
 
 const ambientLight = new AmbientLight({
@@ -51,7 +51,7 @@ const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-styl
 
 export default function App({
   trips = DATA_URL.TRIPS,
-  trailLength = 1000,
+  trailLength = 200,
   initialViewState = INITIAL_VIEW_STATE,
   mapStyle = MAP_STYLE,
   theme = DEFAULT_THEME,

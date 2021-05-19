@@ -1,4 +1,5 @@
 node_modules/
-taxi.json
-sample_taxi.csv
+bin/
 .vscode/
+*.csv
+*.json
