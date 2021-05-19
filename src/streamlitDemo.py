@@ -6,6 +6,13 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 import pydeck as pdk
 
+DATA_PATH="../resource/data_processed.csv"
+state_list = ["Free", "Occupancy", "All"]
+state_dict = {"Free": 0, "Occupancy": 1}
+choice_list = ["State", "Origin&Destination", "Speed"]
+api_keys={
+    'mapbox':'pk.eyJ1IjoicmphdnVlcyIsImEiOiJja29pZmh6MnAwdGl3MnZsbGF5cjhkMGZyIn0.1HOnwLeJDLcvlqnhn-BBcg'
+}
 
 @st.cache
 def load_data_by_hour(data, target_hour, state_name):
@@ -21,10 +28,13 @@ def load_data_by_hour(data, target_hour, state_name):
 
     return data
 
+@st.cache
+def load_data(path):
+    return pd.read_csv(path)
 
 def relation_time_number():
     st.title("relation between taxi number and time")
-    df = pd.read_csv("../resource/data_processed.csv")
+    df = pd.read_csv(DATA_PATH)
 
     sub_df = df[['hour', 'taxi_id']]
     sub_df = sub_df.drop_duplicates()
@@ -33,13 +43,16 @@ def relation_time_number():
     st.line_chart(sub_df["taxi_id"])
 
 
-def map_taxi():
-    df = pd.read_csv("sample_taxi_modified.csv")
-    # df['hour'] = pd.to_datetime(df['time']).dt.hour
-    # df['minute'] = pd.to_datetime(df['time']).dt.minute
+def main(df):
+    choice = st.sidebar.selectbox("Analysis", choice_list)
+    if choice == choice_list[0]:
+        show_state(df)
+    elif choice == choice_list[1]:
+        show_od(df)
+    else:
+        show_speed(df)
 
-    state_list = ["Free", "Occupancy", "All"]
-    state_dict = {"Free": 0, "Occupancy": 1}
+def show_state(df):
     state_name = st.sidebar.selectbox("state", state_list)
 
     hour_selected = st.slider("Select hour of pickup", 0, 23)
@@ -72,38 +85,80 @@ def map_taxi():
         color='red'
     ), use_container_width=True)
 
-    # clf_k_means = KMeans(n_clusters=1000, max_iter=10)
-    # print("clf_KMeans聚类中心\n", clf_k_means.cluster_centers_)
+def show_od(df):
+    choice = st.sidebar.radio('', ('Origin', 'Destination'))
+    if choice == 'Origin':
+        filtered=df[
+            (df['is_origin']==1)
+        ]
+    else:
+        filtered=df[
+            (df['is_destination']==1)
+        ]
+    # Define a layer to display on a map
+    layer = pdk.Layer(
+        'HeatmapLayer',
+        filtered.sample(frac=0.05),                                   #数据在此输入
+        get_position=['lon', 'lat'],               #指定经纬度的列',
+        opacity=0.7,
+        radiusPixels=7,
+        threshold=0.08,
+        intensity=5,
+        colorRange=[[116,169,207],[54,144,192],[5,112,176],[3,78,123]],
+    )
 
-    # st.pydeck_chart(pdk.Deck(
-    #     map_style='mapbox://styles/mapbox/light-v9',
-    #     initial_view_state=pdk.ViewState(
-    #         latitude=22.7,
-    #         longitude=114.0,
-    #         zoom=10,
-    #         pitch=50,
-    #     ),
-    #     layers=[
-    #         pdk.Layer(
-    #             'HexagonLayer',
-    #             data=part_df,
-    #             get_position='[lon, lat]',
-    #             radius=200,
-    #             elevation_scale=4,
-    #             elevation_range=[0, 1000],
-    #             pickable=True,
-    #             extruded=True,
-    #         ),
-    #         pdk.Layer(
-    #             'ScatterplotLayer',
-    #             data=part_df,
-    #             get_position='[lon, lat]',
-    #             get_color='[200, 30, 0, 160]',
-    #             get_radius=200,
-    #         ),
-    #     ],
-    # ))
+    # Set the viewport location
+    view_state = pdk.ViewState(
+        longitude=114.027465,
+        latitude=22.632468,
+        zoom=10,
+        pitch=40,
+        bearing=-10)
 
+    # Render
+    r = pdk.Deck(layers=[layer],
+                initial_view_state=view_state,
+                api_keys=api_keys,
+                map_style='light'
+                )
+    st.pydeck_chart(r, True)
+
+@st.cache
+def speed_data(df):
+    return df[['lon','lat','speed']].sample(frac=0.01)
+
+
+def show_speed(df):
+    data=speed_data(df)
+    # Define a layer to display on a map
+    layer = pdk.Layer(
+        'HexagonLayer',
+        data,                                   #数据在此输入
+        get_position=['lon', 'lat'],                #指定经纬度的列
+        getColorWeight = 'speed',                #指定集计数量的列
+        getElevationWeight = 'speed',            #指定集计数量的列
+        elevation_scale=10,
+        radius = 200,                                #Hexagon的大小
+        elevation_range=[0, 1000],                    #Hexagon的高低
+        extruded=True,
+        coverage=1
+        )
+    # Set the viewport location
+    view_state = pdk.ViewState(
+        longitude=114.027465,
+        latitude=22.632468,
+        zoom=10,
+        pitch=25,
+        bearing=-10)
+
+    # Render
+    r = pdk.Deck(layers=[layer],
+                initial_view_state=view_state,
+                api_keys=api_keys,
+                map_style='light'
+                )
+    st.pydeck_chart(r)
 
 if __name__ == "__main__":
-    map_taxi()
+    df = load_data(DATA_PATH)
+    main(df)

@@ -24,18 +24,9 @@ const pointLight = new PointLight({
 
 const lightingEffect = new LightingEffect({ambientLight, pointLight});
 
-const material = {
-  ambient: 0.1,
-  diffuse: 0.6,
-  shininess: 32,
-  specularColor: [60, 64, 70]
-};
-
 const DEFAULT_THEME = {
-  buildingColor: [74, 80, 87],
-  trailColor0: [253, 128, 93],
-  trailColor1: [23, 184, 190],
-  material,
+  trailColor0: [71, 194, 255],
+  trailColor1: [255, 71, 71],
   effects: [lightingEffect]
 };
 
@@ -51,7 +42,7 @@ const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-styl
 
 export default function App({
   trips = DATA_URL.TRIPS,
-  trailLength = 200,
+  trailLength = 100,
   initialViewState = INITIAL_VIEW_STATE,
   mapStyle = MAP_STYLE,
   theme = DEFAULT_THEME,
@@ -82,7 +73,7 @@ export default function App({
       getPath: d => d.path,
       getTimestamps: d => d.timestamps,
       getColor: d => d.color,
-      opacity: 0.6,
+      opacity: 0.8,
       widthMinPixels: 2,
       rounded: true,
       trailLength,
