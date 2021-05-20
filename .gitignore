@@ -1,6 +1,7 @@
 node_modules/
 bin/
 .vscode/
+tmp/
 *.csv
 *.json
 *.zip

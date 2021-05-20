@@ -5,14 +5,31 @@ import altair as alt
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 import pydeck as pdk
+# import plotly as py
+# from plotly.offline import iplot
+# import cufflinks as cf
+# import plotly.plotly as py
+import plotly_express as px
 
 DATA_PATH="../resource/data_processed.csv"
+ORDER_PATH="../resource/order.csv"
 state_list = ["Free", "Occupancy", "All"]
 state_dict = {"Free": 0, "Occupancy": 1}
-choice_list = ["State", "Origin&Destination", "Speed"]
+choice_list = ["State", "Order", "Speed", "Dynamic Trajectory"]
 api_keys={
     'mapbox':'pk.eyJ1IjoicmphdnVlcyIsImEiOiJja29pZmh6MnAwdGl3MnZsbGF5cjhkMGZyIn0.1HOnwLeJDLcvlqnhn-BBcg'
 }
+ABOUT_US='''
+CS306 Final Project
+
+Group members:
+@Anditty
+@EdisonE3
+@Gan-Cheng
+@JavuesZhang
+
+
+Thanks!'''
 
 @st.cache
 def load_data_by_hour(data, target_hour, state_name):
@@ -32,30 +49,32 @@ def load_data_by_hour(data, target_hour, state_name):
 def load_data(path):
     return pd.read_csv(path)
 
-def relation_time_number():
-    st.title("relation between taxi number and time")
-    df = pd.read_csv(DATA_PATH)
-
-    sub_df = df[['hour', 'taxi_id']]
-    sub_df = sub_df.drop_duplicates()
-    sub_df = sub_df.groupby(['hour']).count()
-
-    st.line_chart(sub_df["taxi_id"])
-
-
 def main(df):
+    st.sidebar.title("Taxi!!!!!")
+    st.sidebar.header("Make your Choice!")
     choice = st.sidebar.selectbox("Analysis", choice_list)
     if choice == choice_list[0]:
         show_state(df)
     elif choice == choice_list[1]:
-        show_od(df)
-    else:
+        show_order()
+    elif choice == choice_list[2]:
         show_speed(df)
+    elif choice == choice_list[3]:
+        video_bytes = get_video()
+        st.video(video_bytes)
+    st.sidebar.header("About Us")
+    st.sidebar.text(ABOUT_US)
+
+@st.cache
+def get_video():
+    video_file = open('trajectory.mp4', 'rb')
+    return video_file.read()
 
 def show_state(df):
-    state_name = st.sidebar.selectbox("state", state_list)
+    st.title("State Analysis")
+    state_name = st.selectbox("state", state_list)
 
-    hour_selected = st.slider("Select hour of pickup", 0, 23)
+    hour_selected = st.slider("Select hour", 0, 23)
 
     part_df = load_data_by_hour(df, hour_selected, state_name)
     st.map(part_df)
@@ -70,7 +89,7 @@ def show_state(df):
         ]
     filtered = filtered.drop_duplicates(['taxi_id', 'minute'])
     hist = np.histogram(filtered["minute"], bins=60, range=(0, 60))[0]
-    chart_data = pd.DataFrame({"minute": range(60), "pickups": hist})
+    chart_data = pd.DataFrame({"minute": range(60), "number": hist})
     # LAYING OUT THE HISTOGRAM SECTION
     st.write("")
     st.write("**per minute between %i:00 and %i:00**" % (hour_selected, (hour_selected + 1) % 24))
@@ -78,28 +97,34 @@ def show_state(df):
         interpolate='step-after',
     ).encode(
         x=alt.X("minute:Q", scale=alt.Scale(nice=False)),
-        y=alt.Y("pickups:Q"),
-        tooltip=['minute', 'pickups']
+        y=alt.Y("number:Q"),
+        tooltip=['minute', 'number']
     ).configure_mark(
         opacity=0.5,
         color='red'
     ), use_container_width=True)
 
-def show_od(df):
-    choice = st.sidebar.radio('', ('Origin', 'Destination'))
-    if choice == 'Origin':
-        filtered=df[
-            (df['is_origin']==1)
-        ]
-    else:
-        filtered=df[
-            (df['is_destination']==1)
-        ]
+@st.cache
+def get_order_data():
+    return pd.read_csv(ORDER_PATH)[['origin_lon','origin_lat','destination_lon','destination_lat','hour','during_time','distance','speed']].sample(frac=0.2)
+
+def show_order():
+    df=get_order_data()
+    st.title("Order Analysis")
+    choice = st.selectbox("", ['Origin & Destination', 'Detail Box'])
+    if choice == "Origin & Destination":
+        show_order_od(df)
+    elif choice == "Detail Box":
+        show_order_box(df)
+
+def show_order_od(df):
+    st.header("Origin")
+    hour_selected1 = st.slider("Select hour for origin", 0, 23)
     # Define a layer to display on a map
     layer = pdk.Layer(
         'HeatmapLayer',
-        filtered.sample(frac=0.05),                                   #数据在此输入
-        get_position=['lon', 'lat'],               #指定经纬度的列',
+        df[(df['hour']==hour_selected1)],                                   #数据在此输入
+        get_position=['origin_lon', 'origin_lat'],               #指定经纬度的列',
         opacity=0.7,
         radiusPixels=7,
         threshold=0.08,
@@ -123,14 +148,93 @@ def show_od(df):
                 )
     st.pydeck_chart(r, True)
 
+    st.header("Destination")
+    hour_selected2 = st.slider("Select hour for destination", 0, 23)
+    # Define a layer to display on a map
+    layer = pdk.Layer(
+        'HeatmapLayer',
+        df[(df['hour']==hour_selected2)],                                   #数据在此输入
+        get_position=['destination_lon', 'destination_lat'],               #指定经纬度的列',
+        opacity=0.7,
+        radiusPixels=7,
+        threshold=0.08,
+        intensity=5,
+        colorRange=[[116,169,207],[54,144,192],[5,112,176],[3,78,123]],
+    )
+
+    # Set the viewport location
+    view_state = pdk.ViewState(
+        longitude=114.027465,
+        latitude=22.632468,
+        zoom=10,
+        pitch=40,
+        bearing=-10)
+
+    # Render
+    r = pdk.Deck(layers=[layer],
+                initial_view_state=view_state,
+                api_keys=api_keys,
+                map_style='light'
+                )
+    st.pydeck_chart(r, True)
+
+def show_order_box(df):
+    st.header("Speed Box")
+    fig = px.box(
+        df,
+        x="hour",   # 分组的数据
+        y="speed",  # 箱体图的数值
+        points="suspectedoutliers"
+        # color="hour"  # 颜色分组
+    )
+    st.plotly_chart(fig)
+
+    st.header("Distance Box")
+    fig = px.box(
+        df,
+        x="hour",   # 分组的数据
+        y="distance",  # 箱体图的数值
+        points="suspectedoutliers"
+        # color="hour"  # 颜色分组
+    )
+    st.plotly_chart(fig)
+
+    st.header("During Time Box")
+    fig = px.box(
+        df,
+        x="hour",   # 分组的数据
+        y="during_time",  # 箱体图的数值
+        points="suspectedoutliers"
+        # color="hour"  # 颜色分组
+    )
+    st.plotly_chart(fig)
+
 @st.cache
 def speed_data(df, target_hour, target_minute):
     return df[(df['hour'] == target_hour) & (df['minute'] == target_minute)][['lon','lat','speed']].sample(frac=0.1)
 
+@st.cache
+def speed_data_for_box(df):
+    return df[['hour','speed']].sample(frac=0.05)
+
+@st.cache
+def speed_data_for_jam(df, target_hour):
+    return df[(df['hour'] == target_hour) & (df['speed']<10)][['lon','lat','speed']].sample(frac=0.1)
+
 
 def show_speed(df):
-    hour_selected = st.slider("Select hour of pickup", 0, 23)
-    minute_selected = st.slider("Select minute of pickup", 0, 60)
+    st.title("Speed Analysis")
+    choice = st.selectbox("Choose Analysis Approach", ["None", "Map", "Box", "Traffic Jam Heatmap"])
+    if choice == "Map":
+        show_speed_map(df)
+    elif choice == "Box":
+        show_speed_box(df)
+    elif choice == "Traffic Jam Heatmap":
+        show_speed_jam(df)
+
+def show_speed_map(df):
+    hour_selected = st.slider("Select hour", 0, 23)
+    minute_selected = st.slider("Select minute", 0, 60)
     data=speed_data(df, hour_selected, minute_selected)
     # Define a layer to display on a map
     layer = pdk.Layer(
@@ -152,7 +256,6 @@ def show_speed(df):
         zoom=10,
         pitch=25,
         bearing=-10)
-
     # Render
     r = pdk.Deck(layers=[layer],
                 initial_view_state=view_state,
@@ -160,6 +263,49 @@ def show_speed(df):
                 map_style='light'
                 )
     st.pydeck_chart(r)
+
+def show_speed_box(df):
+    #box chart
+    df=speed_data_for_box(df)
+    
+    fig = px.box(
+        df,
+        x="hour",   # 分组的数据
+        y="speed",  # 箱体图的数值
+        points="suspectedoutliers"
+        # color="hour"  # 颜色分组
+    )
+    st.plotly_chart(fig)
+
+def show_speed_jam(df):
+    hour_selected = st.slider("Select hour", 0, 23)
+    data=speed_data_for_jam(df, hour_selected)
+    # Define a layer to display on a map
+    layer = pdk.Layer(
+        'HeatmapLayer',
+        data.sample(frac=0.05),                                   #数据在此输入
+        get_position=['lon', 'lat'],               #指定经纬度的列',
+        opacity=0.7,
+        radiusPixels=7,
+        threshold=0.08,
+        intensity=5,
+    )
+
+    # Set the viewport location
+    view_state = pdk.ViewState(
+        longitude=114.027465,
+        latitude=22.632468,
+        zoom=10,
+        pitch=40,
+        bearing=-10)
+
+    # Render
+    r = pdk.Deck(layers=[layer],
+                initial_view_state=view_state,
+                api_keys=api_keys,
+                map_style='light'
+                )
+    st.pydeck_chart(r, True)
 
 if __name__ == "__main__":
     df = load_data(DATA_PATH)
