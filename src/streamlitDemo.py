@@ -24,7 +24,7 @@ def load_data_by_hour(data, target_hour, state_name):
     elif state_name == "Occupancy":
         data = data[(data['is_passenger'] == 1)]
 
-    data = data[['lat', 'lon']]
+    data = data[['lat', 'lon', "speed"]]
 
     return data
 
@@ -124,12 +124,14 @@ def show_od(df):
     st.pydeck_chart(r, True)
 
 @st.cache
-def speed_data(df):
-    return df[['lon','lat','speed']].sample(frac=0.01)
+def speed_data(df, target_hour, target_minute):
+    return df[(df['hour'] == target_hour) & (df['minute'] == target_minute)][['lon','lat','speed']].sample(frac=0.1)
 
 
 def show_speed(df):
-    data=speed_data(df)
+    hour_selected = st.slider("Select hour of pickup", 0, 23)
+    minute_selected = st.slider("Select minute of pickup", 0, 60)
+    data=speed_data(df, hour_selected, minute_selected)
     # Define a layer to display on a map
     layer = pdk.Layer(
         'HexagonLayer',
