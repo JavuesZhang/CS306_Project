@@ -8,7 +8,7 @@ import {TripsLayer} from '@deck.gl/geo-layers';
 
 // Source data CSV
 const DATA_URL = {
-  TRIPS: './resource/data_processed.json'
+  TRIPS: './bin/data_processed.json'
   };
 
 const ambientLight = new AmbientLight({
@@ -25,8 +25,6 @@ const pointLight = new PointLight({
 const lightingEffect = new LightingEffect({ambientLight, pointLight});
 
 const DEFAULT_THEME = {
-  trailColor0: [71, 194, 255],
-  trailColor1: [255, 71, 71],
   effects: [lightingEffect]
 };
 
@@ -42,12 +40,12 @@ const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-styl
 
 export default function App({
   trips = DATA_URL.TRIPS,
-  trailLength = 100,
+  trailLength = 150,
   initialViewState = INITIAL_VIEW_STATE,
   mapStyle = MAP_STYLE,
   theme = DEFAULT_THEME,
-  loopLength = 3600*24, // unit corresponds to the timestamp in source data
-  animationSpeed = 100
+  loopLength = 3600*5, // unit corresponds to the timestamp in source data
+  animationSpeed = 1.5
 }) {
   const [time, setTime] = useState(0);
   const [animation] = useState({});
@@ -77,7 +75,7 @@ export default function App({
       widthMinPixels: 2,
       rounded: true,
       trailLength,
-      currentTime: time,
+      currentTime: time+3600*6,
 
       shadowEnabled: false
     })

@@ -20,7 +20,7 @@ api_keys={
     'mapbox':'pk.eyJ1IjoicmphdnVlcyIsImEiOiJja29pZmh6MnAwdGl3MnZsbGF5cjhkMGZyIn0.1HOnwLeJDLcvlqnhn-BBcg'
 }
 ABOUT_US='''
-CS306 Final Project
+CS306 Final Project v3.0
 
 Group members:
 @Anditty
@@ -60,14 +60,13 @@ def main(df):
     elif choice == choice_list[2]:
         show_speed(df)
     elif choice == choice_list[3]:
-        video_bytes = get_video()
-        st.video(video_bytes)
+        show_video()
     st.sidebar.header("About Us")
     st.sidebar.text(ABOUT_US)
 
 @st.cache
-def get_video():
-    video_file = open('trajectory.mp4', 'rb')
+def get_video(path):
+    video_file = open(path, 'rb')
     return video_file.read()
 
 def show_state(df):
@@ -221,7 +220,6 @@ def speed_data_for_box(df):
 def speed_data_for_jam(df, target_hour):
     return df[(df['hour'] == target_hour) & (df['speed']<10)][['lon','lat','speed']].sample(frac=0.1)
 
-
 def show_speed(df):
     st.title("Speed Analysis")
     choice = st.selectbox("Choose Analysis Approach", ["None", "Map", "Box", "Traffic Jam Heatmap"])
@@ -306,6 +304,18 @@ def show_speed_jam(df):
                 map_style='light'
                 )
     st.pydeck_chart(r, True)
+
+def show_video():
+    st.title("Dynamic Trajectory")
+    choice_list=["Morning (7:00-10:00)", "Evening (18:00-21:00)"]
+    choice = st.selectbox("Choose Time", choice_list)
+    path=''
+    if choice == choice_list[0]:
+        path='../resource/Taxi_Dynamic_Trajectory_Morning.mp4'
+    else:
+        path='../resource/Taxi_Dynamic_Trajectory_Evening.mp4'
+    video_bytes = get_video(path)
+    st.video(video_bytes)
 
 if __name__ == "__main__":
     df = load_data(DATA_PATH)
